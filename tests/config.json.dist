@@ -1,0 +1,5 @@
+{
+  "user": "admin",
+  "pass": "pass",
+  "url":  "http://example.com:1234/server/xml.server.php"
+}
