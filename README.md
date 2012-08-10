@@ -14,7 +14,7 @@ var conn = new AmpacheSession('user', 'pass', 'http://example.com/server/xml.ser
 Examples
 --------
 
-Authenticate to an ampache server (assumes `conn` is set from the above usage)
+#### Authenticate to an ampache server (assumes `conn` is set from the above usage)
 
 ``` js
 conn.authenticate(function(err, body) {
@@ -37,7 +37,9 @@ yields
 }
 ```
 
-Get a list of artists
+The dates in the above examples are JavaScript `Date` objects
+
+#### Get a list of artists
 
 ``` js
 conn.get_artists(function(err, body) {
@@ -68,7 +70,7 @@ yields
 }
 ```
 
-Query the Ampache server for a given artist id
+#### Query the Ampache server for a given artist id
 
 ``` js
 conn.get_artist(249, function(err, body) {
@@ -96,7 +98,7 @@ yields
 }
 ```
 
-Ping the ampache server to prolong your session
+#### Ping the ampache server to prolong your session
 
 ``` js
 conn.ping(function(err, body) {
@@ -112,6 +114,8 @@ yields
   "compatible": "350001"
 }
 ```
+
+The date in the above example is a JavaScript `Date` object
 
 Functions
 ---------

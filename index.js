@@ -59,6 +59,11 @@ AmpacheSession.prototype.authenticate = function(callback) {
     // If the body is present, save it
     if (body) self.auth = body;
 
+    // Cast the date items
+    ['add', 'update', 'clean'].forEach(function(key) {
+      if (body && body[key]) body[key] = new Date(body[key]);
+    });
+
     // Carly Rae back to the caller
     callback(err, body);
   });
@@ -70,7 +75,12 @@ AmpacheSession.prototype.authenticate = function(callback) {
  * Extend a session on the server
  */
 AmpacheSession.prototype.ping = function(callback) {
-  return this.call_api({'action': 'ping'}, callback);
+  return this.call_api({'action': 'ping'}, function(err, body) {
+    // try to cast the date
+    if (body && body.session_expire)
+      body.session_expire = new Date(body.session_expire);
+    callback(err, body);
+  });
 };
 
 /**
