@@ -11,7 +11,9 @@ var crypto = require('crypto'),
     url = require('url'),
     util = require('util'),
     request = require('request'),
+    autocast = require('autocast'),
     xml2js = require('xml2js'),
+    MAX_OFFSET = 5000,
     API_VERSION = 350001;
 
 // Exports
@@ -30,7 +32,7 @@ function AmpacheSession(user, pass, url, opts) {
   this.pass = pass;
   this.url = url;
   this.opts = opts || {};
-  this.auth = null;
+  this.auth = {};
 }
 
 /**
@@ -59,13 +61,18 @@ AmpacheSession.prototype.authenticate = function(callback) {
     // If the body is present, save it
     if (body) self.auth = body;
 
+    // Autocast the obj
+    Object.keys(self.auth).forEach(function(key) {
+      self.auth[key] = autocast(self.auth[key]);
+    });
+
     // Cast the date items
     ['add', 'update', 'clean'].forEach(function(key) {
-      if (body && body[key]) body[key] = new Date(body[key]);
+      if (self.auth && self.auth[key]) self.auth[key] = new Date(self.auth[key]);
     });
 
     // Carly Rae back to the caller
-    callback(err, body);
+    callback(err, self.auth);
   });
 };
 
@@ -114,18 +121,20 @@ AmpacheSession.prototype.get_song = function(filter, callback) {
 AmpacheSession.prototype.call_api = function(values, callback) {
   values.auth = values.auth || this.auth.auth;
   callback = callback || function() {};
+  var self = this;
 
   // XML Parser party
   var parser = new xml2js.Parser();
 
   // Format the URL with values
   var url_to_hit = this.url + url.format({'query': values});
-  this.debug('Making request to: %s', url_to_hit);
+  self.debug('Making request to: %s', url_to_hit);
 
   // Make the request and return the request obj
   return request(url_to_hit, function(err, res, body) {
     if (err) return callback(err);
-    else if (res.statusCode !== 200) return callback({'error': res.statusCode});
+    self.debug('Request complete to: %s [%d]', url_to_hit, res.statusCode);
+    if (res.statusCode !== 200) return callback({'error': res.statusCode});
 
     // Callback the results
     parser.parseString(body, function(err, res) {
@@ -161,8 +170,26 @@ AmpacheSession.prototype._get = function(action, filter, callback) {
   };
   if (filter) values.filter = filter;
 
-  // Make the call
-  return this.call_api(values, callback);
+  // Check to see if an offset is needed
+  if (this.auth[action] && this.auth[action] > MAX_OFFSET) {
+    var total_count = Math.ceil(this.auth[action] / MAX_OFFSET),
+        count = 0,
+        d = {};
+    this.debug('Offset needed: %d calls required', total_count);
+    // Loop the offsets (i=offset needed)
+    for (var i = 0; i < total_count; i++) {
+      values.offset = i * MAX_OFFSET;
+      this.call_api(values, function(err, body) {
+        Object.keys(body).forEach(function(key) {
+          d[key] = body[key];
+        });
+        if (++count >= total_count) return callback(err, d);
+      });
+    }
+  } else {
+    // Make the call with no offset
+    return this.call_api(values, callback);
+  }
 }
 
 /**
