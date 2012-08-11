@@ -25,15 +25,15 @@ yields
 ``` json
 {
   "auth": "510b0a5f0f0e076ebab1df731acbbaeb",
-  "api": "350001",
+  "api": 350001,
   "update": "2012-05-23T03:32:01+00:00",
   "add": "2012-08-07T09:32:17+00:00",
   "clean": "2012-08-07T09:32:29+00:00",
-  "songs": "8043",
-  "albums": "862",
-  "artists": "372",
-  "playlists": "0",
-  "videos": "9"
+  "songs": 8043,
+  "albums": 862,
+  "artists": 372,
+  "playlists": 0,
+  "videos": 9
 }
 ```
 
