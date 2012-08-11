@@ -177,13 +177,18 @@ AmpacheSession.prototype._get = function(action, filter, callback) {
         d = {};
     this.debug('Offset needed: %d calls required', total_count);
     // Loop the offsets (i=offset needed)
+    var errors = [];
     for (var i = 0; i < total_count; i++) {
       values.offset = i * MAX_OFFSET;
       this.call_api(values, function(err, body) {
-        Object.keys(body).forEach(function(key) {
-          d[key] = body[key];
-        });
-        if (++count >= total_count) return callback(err, d);
+        if (err) {
+          errors.push(err);
+        } else {
+          Object.keys(body).forEach(function(key) {
+            d[key] = body[key];
+          });
+        }
+        if (++count >= total_count) return callback((errors.length === 0) ? null : errors, d);
       });
     }
   } else {
