@@ -173,6 +173,10 @@ AmpacheSession.prototype.debug = function() {
     process.stderr.write('AmpacheJS :: ' + util.format.apply(this, arguments) + '\n');
 };
 
+/**
+ * Internal function to turn an array into an object
+ * keyed off of ['@']['id']
+ */
 function key_array(array) {
   var d = {};
   for (var i in array) {
