@@ -1,7 +1,7 @@
 {
   "name": "ampache",
   "description": "Communicate to an Ampache server using the API",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Dave Eddy <dave@daveeddy.com> (http://www.daveeddy.com)",
   "contributors": [],
   "repository": {
