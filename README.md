@@ -127,7 +127,7 @@ conn.call_api({'action':'playlists'}, function(err, body) {
 });
 ```
 yields
-```
+``` json
 {
   "1": {
     "@": {
