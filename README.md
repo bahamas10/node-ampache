@@ -110,12 +110,45 @@ yields
 {
   "session_expire": "Fri, 10 Aug 2012 07:05:09 +0000",
   "server": "3.6-Alpha1-DEV",
-  "version": "350001",
-  "compatible": "350001"
+  "version": 350001,
+  "compatible": 350001
 }
 ```
 
 The date in the above example is a JavaScript `Date` object
+
+#### Send an api call
+
+Circumvent the built-in convenience methods and hit the api directly
+
+``` js
+conn.call_api({'action':'playlists'}, function(err, body) {
+  console.log(body);
+});
+```
+yields
+```
+{
+  "1": {
+    "@": {
+      "id": "1"
+    },
+    "name": "AILD - Decas",
+    "owner": "Administrator",
+    "items": "12",
+    "type": "public"
+  },
+  "2": {
+    "@": {
+      "id": "2"
+    },
+    "name": "AILD - The Powerless Rise",
+    "owner": "Administrator",
+    "items": "11",
+    "type": "public"
+  }
+}
+```
 
 Functions
 ---------
@@ -130,26 +163,41 @@ Create a new `AmpacheServer` object.  `opts` is an object with the following key
 
 The following functions require an `AmpacheServer` object to run
 
+Callbacks will return an error object if applicable as the first argument,
+and an object representing the server response as the second.
+
 All callbacks are optional
 
-### conn.authenticate(callback(err, body))
+### conn.authenticate(function(err, body))
 
 Authenticate to the server, storing the auth data in the object, and return
 the body
 
-### conn.ping(callback(err, body))
+### conn.ping(function(err, body))
 
 Extend the session on the server by sending a keep-alive
 
-### conn.get\_artists, conn.get\_albums, conn.get\_songs([search], callback(err, res))
+### conn.get\_artists, conn.get\_albums, conn.get\_songs([search], function(err, body))
 
 Get a list of all artists/albums/songs on the server, returns a list of objects
 
 `search` is an optional string to filter the results
 
-### conn.get\_artist, conn.get\_album, conn.get\_song(id, callback(err, res))
+### conn.get\_artist, conn.get\_album, conn.get\_song(id, function(err, body))
 
 Get a single artist/album/song by its ID on the server
+
+### conn.call\_api(values, function(err, body))
+
+Call the API directly with a given set of values to pass in
+
+ex.
+
+``` js
+conn.call_api({'action':'ping'}, function(err, body) {});
+```
+
+The `auth` parameter will be provided by the function if not provided
 
 Install
 -------

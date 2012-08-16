@@ -40,14 +40,14 @@ function AmpacheSession(user, pass, url, opts) {
  *
  * Ask for an auth token from the server
  *
- * @param callback {function} Call me maybe
+ * @param cb {function} Call me maybe
  */
-AmpacheSession.prototype.authenticate = function(callback) {
+AmpacheSession.prototype.authenticate = function(cb) {
   // Make the auth data
   var self = this,
       time = Math.floor(Date.now() / 1000),
-      key = crypto.createHash('sha256').update(self.pass).digest('hex'),
-      passphrase = crypto.createHash('sha256').update(time + key).digest('hex'),
+      key = sha(self.pass);
+      passphrase = sha(time + key);
       values = {
         'action'    : 'handshake',
         'auth'      : passphrase,
@@ -58,21 +58,16 @@ AmpacheSession.prototype.authenticate = function(callback) {
 
   // Send the request
   return self.call_api(values, function(err, body) {
-    // If the body is present, save it
-    if (body) self.auth = body;
+    if (err) return cb(err);
 
-    // Autocast the obj
-    Object.keys(self.auth).forEach(function(key) {
-      self.auth[key] = autocast(self.auth[key]);
-    });
+    self.auth = body;
 
     // Cast the date items
     ['add', 'update', 'clean'].forEach(function(key) {
       if (self.auth && self.auth[key]) self.auth[key] = new Date(self.auth[key]);
     });
 
-    // Carly Rae back to the caller
-    callback(err, self.auth);
+    cb(null, self.auth);
   });
 };
 
@@ -80,47 +75,53 @@ AmpacheSession.prototype.authenticate = function(callback) {
  * ping
  *
  * Extend a session on the server
+ *
+ * @param cb {function} Call me maybe
  */
-AmpacheSession.prototype.ping = function(callback) {
+AmpacheSession.prototype.ping = function(cb) {
   return this.call_api({'action': 'ping'}, function(err, body) {
+    if (err) return cb(err);
+
     // try to cast the date
     if (body && body.session_expire)
       body.session_expire = new Date(body.session_expire);
-    callback(err, body);
+
+    cb(null, body);
   });
 };
 
 /**
  * Useful public functions to get songs/albums/artists
  */
-AmpacheSession.prototype.get_artists = function(filter, callback) {
-  return this._get('artists', filter, callback);
+AmpacheSession.prototype.get_artists = function(filter, cb) {
+  return this._get('artists', filter, cb);
 };
-AmpacheSession.prototype.get_albums = function(filter, callback) {
-  return this._get('albums', filter, callback);
+AmpacheSession.prototype.get_albums = function(filter, cb) {
+  return this._get('albums', filter, cb);
 };
-AmpacheSession.prototype.get_songs = function(filter, callback) {
-  return this._get('songs', filter, callback);
+AmpacheSession.prototype.get_songs = function(filter, cb) {
+  return this._get('songs', filter, cb);
 };
-AmpacheSession.prototype.get_artist = function(filter, callback) {
-  return this._get('artist', filter, callback);
+AmpacheSession.prototype.get_artist = function(filter, cb) {
+  return this._get('artist', filter, cb);
 };
-AmpacheSession.prototype.get_album = function(filter, callback) {
-  return this._get('album', filter, callback);
+AmpacheSession.prototype.get_album = function(filter, cb) {
+  return this._get('album', filter, cb);
 };
-AmpacheSession.prototype.get_song = function(filter, callback) {
-  return this._get('song', filter, callback);
+AmpacheSession.prototype.get_song = function(filter, cb) {
+  return this._get('song', filter, cb);
 };
 
 /**
  * Send a request to the ampache server
  *
  * @param values   {hash}     Object of key=>values to send to the server
- * @param callback {function} Call me maybe
+ * @param cb       {function} Call me maybe
  */
-AmpacheSession.prototype.call_api = function(values, callback) {
+AmpacheSession.prototype.call_api = function(values, cb) {
+  if (!values.action) return cb(new Error('Action must be specified'));
+  cb = cb || function() {};
   values.auth = values.auth || this.auth.auth;
-  callback = callback || function() {};
   var self = this;
 
   // XML Parser party
@@ -132,35 +133,34 @@ AmpacheSession.prototype.call_api = function(values, callback) {
 
   // Make the request and return the request obj
   return request(url_to_hit, function(err, res, body) {
-    if (err) return callback(err);
+    if (err) return cb(err);
     self.debug('Request complete to: %s [%d]', url_to_hit, res.statusCode);
-    if (res.statusCode !== 200) return callback({'error': res.statusCode});
+    if (res.statusCode !== 200) return cb(new Error('Status code: ' + res.statusCode));
+    if (!body) return cb(new Error('Empty body received'));
 
-    // Callback the results
     parser.parseString(body, function(err, res) {
+      if (err) return cb(err);
+
       // Check to see if post processing is required
       var action = (values.action && values.action[values.action.length - 1] === 's')
                  ? values.action.substr(0, values.action.length - 1)
                  : values.action;
-      // Extract out the relevant key
+
       if (res && action && res[action]) res = res[action];
-
-      // If it's an array, let's key it off of ID
       if (res.length) res = key_array(res);
+      autocast_obj(res);
 
-      // Carly rae it to the user
-      callback(err, res);
+      cb(null, res);
     });
   });
 };
 
 /**
- * Function to get artists/albums/songs
+ * helper function to get artists/albums/songs
  */
-AmpacheSession.prototype._get = function(action, filter, callback) {
-  // Check if filter is supplied
+AmpacheSession.prototype._get = function(action, filter, cb) {
   if (typeof filter === 'function') {
-    callback = filter;
+    cb = filter;
     filter = null;
   }
 
@@ -188,12 +188,13 @@ AmpacheSession.prototype._get = function(action, filter, callback) {
             d[key] = body[key];
           });
         }
-        if (++count >= total_count) return callback((errors.length === 0) ? null : errors, d);
+        if (++count >= total_count)
+          return cb((errors.length === 0) ? null : errors[0], d);
       });
     }
   } else {
-    // Make the call with no offset
-    return this.call_api(values, callback);
+    // just make the call, no offset needed
+    return this.call_api(values, cb);
   }
 }
 
@@ -215,4 +216,21 @@ function key_array(array) {
     d[array[i]['@']['id']] = array[i];
   }
   return d;
+}
+
+/**
+ * Autocast an object
+ */
+function autocast_obj(obj) {
+  if (!obj) return;
+  Object.keys(obj).forEach(function(key) {
+    if (obj && obj[key]) obj[key] = autocast(obj[key]);
+  });
+}
+
+/**
+ * return a sha256 string
+ */
+function sha(s, alg) {
+  return crypto.createHash(alg || 'sha256').update(s).digest('hex');
 }

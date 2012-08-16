@@ -3,7 +3,7 @@
  * Test getting an artist
  */
 var conf = require('./config.json'),
-    id = process.argv[2] || 569;
+    id = process.argv[2] || 569,
     AmpacheSession = require('../');
 
 // Make the connection object
