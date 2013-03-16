@@ -6,15 +6,17 @@
  * Author: Dave Eddy <dave@daveeddy.com>
  */
 
-var crypto = require('crypto'),
-    http = require('http'),
-    url = require('url'),
-    util = require('util'),
-    request = require('request'),
-    autocast = require('autocast'),
-    xml2js = require('xml2js'),
-    MAX_OFFSET = 5000,
-    API_VERSION = 350001;
+var crypto = require('crypto');
+var http = require('http');
+var url = require('url');
+var util = require('util');
+
+var autocast = require('autocast');
+var request = require('request');
+var xml2js = require('xml2js');
+
+var API_VERSION = 350001;
+var MAX_OFFSET = 5000;
 
 // Exports
 module.exports = AmpacheSession;
@@ -44,17 +46,17 @@ function AmpacheSession(user, pass, url, opts) {
  */
 AmpacheSession.prototype.authenticate = function(cb) {
   // Make the auth data
-  var self = this,
-      time = Math.floor(Date.now() / 1000),
-      key = sha(self.pass);
-      passphrase = sha(time + key);
-      values = {
-        'action'    : 'handshake',
-        'auth'      : passphrase,
-        'timestamp' : time,
-        'user'      : self.user,
-        'version'   : API_VERSION,
-      };
+  var self = this;
+  var time = Math.floor(Date.now() / 1000);
+  var key = sha(self.pass);
+  var passphrase = sha(time + key);
+  var values = {
+    action    : 'handshake',
+    auth      : passphrase,
+    timestamp : time,
+    user      : self.user,
+    version   : API_VERSION,
+  };
 
   // Send the request
   return self.call_api(values, function(err, body) {
@@ -64,7 +66,8 @@ AmpacheSession.prototype.authenticate = function(cb) {
 
     // Cast the date items
     ['add', 'update', 'clean'].forEach(function(key) {
-      if (self.auth && self.auth[key]) self.auth[key] = new Date(self.auth[key]);
+      if (self.auth && self.auth[key])
+        self.auth[key] = new Date(self.auth[key]);
     });
 
     cb(null, self.auth);
@@ -166,15 +169,15 @@ AmpacheSession.prototype._get = function(action, filter, cb) {
 
   // Create the values to send
   var values = {
-    'action': action
+    action: action
   };
   if (filter) values.filter = filter;
 
   // Check to see if an offset is needed
   if (this.auth[action] && this.auth[action] > MAX_OFFSET) {
-    var total_count = Math.ceil(this.auth[action] / MAX_OFFSET),
-        count = 0,
-        d = {};
+    var total_count = Math.ceil(this.auth[action] / MAX_OFFSET);
+    var count = 0;
+    var d = {};
     this.debug('Offset needed: %d calls required', total_count);
     // Loop the offsets (i=offset needed)
     var errors = [];
